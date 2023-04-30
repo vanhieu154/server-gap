@@ -25,8 +25,8 @@ database = client.db("GAP2002");
 productCollection = database.collection("Product");
 // database = client.db("FashionData");
 // productCollection = database.collection("test");
-
-
+userCollection = database.collection("User");
+addressCollection = database.collection("Address");
 
 
 app.get("/products", async (req, res) => {
@@ -53,24 +53,7 @@ app.post("/products",cors(),async(req,res)=>{
     res.send(req.body)
 })
 
-app.put("/products",cors(),async(req,res)=>{
-    //update json product into database
-    await productCollection.updateOne(
-        {_id:new ObjectId(req.body._id)},//condition for update
-        { $set: { //Field for updating
-            style: req.body.style,
-            product_subject:req.body.product_subject,
-            product_detail:req.body.product_detail,
-            product_image:req.body.product_image,
-            cDate:req.body.cDate,
-            }
-        }
-    )
-    //send Fahsion after updating
-    var o_id = new ObjectId(req.body._id);
-    const result = await productCollection.find({_id:o_id}).toArray();
-    res.send(result[0])
-})
+
 
 app.delete("/products/:id",cors(),async(req,res)=>{
     //find detail product with id
@@ -102,6 +85,26 @@ app.post("/users",cors(),async(req,res)=>{
 
     res.send(req.body)
 })
+
+app.put("/users",cors(),async(req,res)=>{
+    const userCollection=database.collection("User");
+
+    //update json product into database
+    await userCollection.updateOne(
+        {_id:new ObjectId(req.body._id)},//condition for update
+        { $set: { //Field for updating
+            name: req.body.name,
+            email:req.body.email,
+            dob:req.body.dob,
+            phoneNumber:req.body.phoneNumber,
+            gender:req.body.gender,
+            }
+        }
+    )
+    var o_id = new ObjectId(req.body._id);
+    const result = await userCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+})
 //đăng nhâp
 app.post("/login", cors(), async (req, res) => {
     const username = req.body.username;
@@ -124,6 +127,7 @@ app.post("/login", cors(), async (req, res) => {
     }
 });
 
+
 app.put("/cart/:id",cors(),async(req,res)=>{
     //update json product into database
     userCollection=database.collection("User");
@@ -135,50 +139,80 @@ app.put("/cart/:id",cors(),async(req,res)=>{
             }
         }
     )
-    //send Fahsion after updating
-    // var o_id = new ObjectId(req.body._id);
     const result = await  userCollection.find({_id:o_id}).toArray();
     res.send(req.body)
 })
 
-// app.put("/cart",cors(),async(req,res)=>{
-//     //update json product into database
-//     userCollection=database.collection("User");
-//     await userCollection.updateOne(
-//         {_id:new ObjectId(req.body._id)},//condition for update
-//         { $set: { //Field for updating
-//             cart:req.body.cart
-//             }
-//         }
-//     )
-//     //send Fahsion after updating
-//     var o_id = new ObjectId(req.body._id);
-//     const result = await  userCollection.find({_id:o_id}).toArray();
-//     res.send(result[0])
-// })
-
-// app.post("/login",cors(),async(res,req)=>{
-//     username = req.body.username;
-//     password = req.body.password;
-
-//     var crypto = require('crypto');
-
-//     userCollection = database.collection("User")
-
-//     var user = await userCollection.findOne({username: username})
-//     if(user==null)
-//         res.send({"username":username,"message":"not exist"})
-//     else
-//     {
-//         hash = crypto.pbkdf2Sync(password,user.salt,1000,64,`sha512`).toString(`hex`);
-//         if(user.password==hash){
-//             res.send(user)
-//         }else{
-//             res.send({"username":username,"password":password,"message":"wrong password"})
-//         }
-//     }
-// })
 
 
 
+app.post("/address/:id", cors(), async (req, res) => {
+    var o_id = new ObjectId(req.params["id"]);
+    const address = req.body;
 
+    const addressCollection = database.collection("Address");
+    const userCollection=database.collection("User");
+
+    const insertedAddress = await addressCollection.insertOne(address);
+    const insertedAddressId = insertedAddress.insertedId;
+  
+    // Thêm _id của Address vào mảng Address[] trong User
+    const user = await userCollection.findOne({ _id: o_id });
+  
+    if (user) {
+      user.Address.push(insertedAddressId);
+      await userCollection.updateOne({ _id: o_id }, { $set: { Address: user.Address } });
+    }
+  
+    res.send(user.Address);
+});
+app.get("/address/:id", cors(), async (req, res) => {
+    var o_id = new ObjectId(req.params["id"]);
+
+    userCollection = database.collection("User");
+
+    // Lấy người dùng dựa trên userId
+    const user = await userCollection.findOne({ _id: o_id });
+
+    if (user) {
+        const addressIds = user.Address; // Lấy mảng addressIds từ user
+        addressCollection = database.collection("Address");
+
+        // Lấy toàn bộ địa chỉ dựa trên mảng addressIds
+        const addresses = await addressCollection.find({ _id: { $in: addressIds } }).toArray();
+
+        res.send(addresses);
+    } else {
+        res.status(404).send("User not found");
+    }
+}); 
+
+
+app.delete("/address/:id/:addressId", cors(), async (req, res) => {
+    const o_id = new ObjectId(req.params["id"]);
+    const addressId = new ObjectId(req.params["addressId"]);
+  
+
+    // Xóa địa chỉ từ bộ sưu tập Address
+    // await addressCollection.deleteOne({ _id: addressId });
+  
+    // Xóa địa chỉ từ mảng Address trong User
+    await userCollection.updateOne({ _id: o_id }, { $pull: { Address: addressId } });
+  
+    res.send("Address deleted successfully");
+});
+
+
+app.get("/address/setDefault/:id/:addressId", cors(), async (req, res) => {
+    const o_id = new ObjectId(req.params["id"]);
+    const addressId = new ObjectId(req.params["addressId"]);
+
+    const user = await userCollection.findOne({ _id: o_id });
+    const addressIds = user.Address;
+
+    await addressCollection.updateMany({ _id: { $in: addressIds } }, { $set: { IsDefault: false } });
+
+    await addressCollection.updateOne({ _id: addressId }, { $set: { IsDefault: true } });
+
+  res.send("Address change successfully");
+}); 
