@@ -216,3 +216,42 @@ app.get("/address/setDefault/:id/:addressId", cors(), async (req, res) => {
 
   res.send("Address change successfully");
 }); 
+
+
+
+app.post("/confirmPass", cors(), async (req, res) => {
+    // const userID = req.body.userID;
+    const password = req.body.password;
+    const userID  = new ObjectId(req.body.userID);
+    const crypto = require('crypto');
+    userCollection = database.collection("User");
+    const user = await userCollection.findOne({_id: userID});
+
+    const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
+    if (user.password === hash) {
+        res.send(true);
+    } else {
+        res.send(false);
+    }    
+    
+});
+
+
+app.put("/changePass", cors(), async (req, res) => {
+    // const userID = req.body.userID;
+    const password = req.body.password;
+    const userID  = new ObjectId(req.body.userID);
+    var crypto = require('crypto');
+    salt=crypto.randomBytes(16).toString('hex');
+    hash = crypto.pbkdf2Sync(password, salt, 1000, 64, `sha512`).toString(`hex`);
+    await userCollection.updateOne(
+        {_id: userID},
+        {$set:{
+            password: hash,
+            salt: salt
+        }}
+        );
+    user=userCollection.findOne({_id: userID})
+    res.send(user)
+
+});
