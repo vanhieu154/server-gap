@@ -27,7 +27,7 @@ productCollection = database.collection("Product");
 // productCollection = database.collection("test");
 userCollection = database.collection("User");
 addressCollection = database.collection("Address");
-
+orderCollection=database.collection("Order")
 
 app.get("/products", async (req, res) => {
     const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
@@ -130,7 +130,6 @@ app.post("/login", cors(), async (req, res) => {
 
 app.put("/cart/:id",cors(),async(req,res)=>{
     //update json product into database
-    userCollection=database.collection("User");
     var o_id = new ObjectId(req.params["id"]);
     await userCollection.updateOne(
         {_id:o_id},//condition for update
@@ -140,7 +139,7 @@ app.put("/cart/:id",cors(),async(req,res)=>{
         }
     )
     const result = await  userCollection.find({_id:o_id}).toArray();
-    res.send(req.body)
+    res.send(result)
 })
 
 
@@ -255,3 +254,11 @@ app.put("/changePass", cors(), async (req, res) => {
     res.send(user)
 
 });
+
+
+app.post("/order",cors(),async(req,res)=>{
+    //put json product into database
+    await orderCollection.insertOne(req.body)
+    //send message to client(send all database to client)
+    res.send(req.body)
+})
