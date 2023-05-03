@@ -28,6 +28,9 @@ productCollection = database.collection("Product");
 userCollection = database.collection("User");
 addressCollection = database.collection("Address");
 orderCollection=database.collection("Order")
+blogCollection = database.collection("Blog");
+adminCollection = database.collection("Admin");
+
 
 app.get("/products", async (req, res) => {
     const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
@@ -262,3 +265,77 @@ app.post("/order",cors(),async(req,res)=>{
     //send message to client(send all database to client)
     res.send(req.body)
 })
+// BLog
+
+app.get("/blogs",cors(),async (req,res)=>{
+    const result = await blogCollection.find({}).toArray();
+    res.send(result)
+}
+)
+
+app.get("/blogs/:id",cors(),async (req,res)=>{
+    var o_id = new ObjectId(req.params["id"]);
+    const result = await blogCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+}
+)
+
+app.post("/blogs",cors(),async(req,res)=>{
+    //put json BLog into database
+    await blogCollection.insertOne(req.body)
+    //send message to client(send all database to client)
+    res.send(req.body)
+})
+
+app.put("/blogs",cors(),async(req,res)=>{
+    //update json BLog into database
+    await blogCollection.updateOne(
+        {_id:new ObjectId(req.body._id)},//condition for update
+        { $set: { //Field for updating
+            title:req.body.title,
+           img:req.body.img,
+           category:req.body.category,
+           tag:req.body.tag,
+           author:req.body.author,
+           description:req.body.description,
+           displayDate:req.body.displayDate,
+            }
+        }
+    )
+    //send BLog after updating
+    var o_id = new ObjectId(req.body._id);
+    const result = await blogCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+})
+
+app.delete("/blogs/:id",cors(),async(req,res)=>{
+    var o_id = new ObjectId(req.params["id"]);
+    const result = await blogCollection.find({_id:o_id}).toArray();
+    await blogCollection.deleteOne(
+    {_id:o_id}
+    )
+    res.send(result[0])
+})
+
+
+//đăng nhâp admin
+app.post("/adminlogin", cors(), async (req, res) => {
+    const adminname = req.body.adminname;
+    const password = req.body.password;
+
+    const crypto = require('crypto');
+    const adminCollection = database.collection("Admin");
+
+    const admin = await adminCollection.findOne({adminname: adminname});
+
+    if (admin == null) {
+        res.send({"adminname": adminname, "message": "not exist"});
+    } else {
+        const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
+        if (admin.password === hash) {
+            res.send(user);
+        } else {
+            res.send({"adminname": adminname, "password": password, "message": "wrong password"});
+        }
+    }
+});
