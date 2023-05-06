@@ -23,6 +23,7 @@ client = new MongoClient("mongodb://127.0.0.1:27017");
 client.connect();
 database = client.db("GAP2002");
 productCollection = database.collection("Product");
+
 // database = client.db("FashionData");
 // productCollection = database.collection("test");
 userCollection = database.collection("User");
@@ -41,7 +42,7 @@ app.get("/product/:style", cors(), async (req, res) => {
     const result = await productCollection.find({ style: style }).sort({ cDate: -1 }).toArray();
     res.send(result);
   });
-    
+
 app.get("/products/:id",cors(),async (req,res)=>{
     var o_id = new ObjectId(req.params["id"]);
     const result = await productCollection.find({_id:o_id}).toArray();
@@ -78,14 +79,10 @@ app.post("/users",cors(),async(req,res)=>{
     //tạo thêm db User trên mongodb
     userCollection=database.collection("User");
     user=req.body
-
     hash=crypto.pbkdf2Sync(user.password, salt,1000,64, `sha512`).toString(`hex`);
-
     user.password=hash
     user.salt=salt
-
     await userCollection.insertOne(user)
-
     res.send(req.body)
 })
 
@@ -108,6 +105,38 @@ app.put("/users",cors(),async(req,res)=>{
     const result = await userCollection.find({_id:o_id}).toArray();
     res.send(result[0])
 })
+//lấy danh sách khách hàng
+userCollection = database.collection("User");
+app.get("/users",cors(),async (req,res)=>{
+  const result = await userCollection.find({}).toArray();
+  res.send(result)})
+
+//lấy customer detail
+app.get("/users/:id",cors(),async (req,res)=>{
+var o_id = new ObjectId(req.params["id"]);
+const result = await userCollection.find({_id:o_id}).toArray();
+res.send(result[0])
+}
+)
+
+//vô hiệu hóa Customer
+app.put("/users/:id",cors(),async(req,res)=>{
+  //update json product into database
+  userCollection=database.collection("User");
+  var o_id = new ObjectId(req.params["id"]);
+  await userCollection.updateOne(
+      {_id:o_id},//condition for update
+      { $set: { //Field for updating
+          UserStatus:req.body.UserStatus
+          }
+      }
+  )
+  //send Fahsion after updating
+  // var o_id = new ObjectId(req.body._id);
+  const result = await  userCollection.find({}).toArray();
+  res.send(result)
+})
+
 //đăng nhâp
 app.post("/login", cors(), async (req, res) => {
     const username = req.body.username;
@@ -157,15 +186,15 @@ app.post("/address/:id", cors(), async (req, res) => {
 
     const insertedAddress = await addressCollection.insertOne(address);
     const insertedAddressId = insertedAddress.insertedId;
-  
+
     // Thêm _id của Address vào mảng Address[] trong User
     const user = await userCollection.findOne({ _id: o_id });
-  
+
     if (user) {
       user.Address.push(insertedAddressId);
       await userCollection.updateOne({ _id: o_id }, { $set: { Address: user.Address } });
     }
-  
+
     res.send(user.Address);
 });
 app.get("/address/:id", cors(), async (req, res) => {
@@ -189,14 +218,14 @@ app.get("/address/:id", cors(), async (req, res) => {
 app.delete("/address/:id/:addressId", cors(), async (req, res) => {
     const o_id = new ObjectId(req.params["id"]);
     const addressId = new ObjectId(req.params["addressId"]);
-  
+
 
     // Xóa địa chỉ từ bộ sưu tập Address
     // await addressCollection.deleteOne({ _id: addressId });
-  
+
     // Xóa địa chỉ từ mảng Address trong User
     await userCollection.updateOne({ _id: o_id }, { $pull: { Address: addressId } });
-  
+
     res.send("Address deleted successfully");
 });
 
@@ -213,7 +242,7 @@ app.get("/address/setDefault/:id/:addressId", cors(), async (req, res) => {
     await addressCollection.updateOne({ _id: addressId }, { $set: { IsDefault: true } });
 
   res.send("Address change successfully");
-}); 
+});
 
 
 
@@ -230,8 +259,8 @@ app.post("/confirmPass", cors(), async (req, res) => {
         res.send(true);
     } else {
         res.send(false);
-    }    
-    
+    }
+
 });
 
 
@@ -313,6 +342,21 @@ app.delete("/blogs/:id",cors(),async(req,res)=>{
     res.send(result[0])
 })
 
+// lấy danh sách admin
+adminCollection = database.collection("Admin");
+app.get("/admins",cors(),async (req,res)=>{
+  const result = await adminCollection.find({}).toArray();
+  res.send(result)
+  }
+  )
+
+//lấy admin detail
+app.get("/admins/:id",cors(),async (req,res)=>{
+  var o_id = new ObjectId(req.params["id"]);
+  const result = await adminCollection.find({_id:o_id}).toArray();
+  res.send(result[0])
+  }
+  )
 
 //đăng nhâp admin
 app.post("/adminlogin", cors(), async (req, res) => {
@@ -410,3 +454,33 @@ app.put("/admin_order_update",cors(),async(req,res)=>{
 
 
 
+  app.post("/admins",cors(),async(req,res)=>{
+    //put json Admin into database
+    await adminCollection.insertOne(req.body)
+    //send message to client(send all database to client)
+    res.send(req.body)
+    })
+
+
+    //vô hiệu hóa Admin
+    app.put("/admins/:id",cors(),async(req,res)=>{
+      adminCollection=database.collection("Admin");
+      var o_id = new ObjectId(req.params["id"]);
+      await adminCollection.updateOne(
+          {_id:o_id},//condition for update
+          { $set: { //Field for updating
+              AdminStatus:req.body.AdminStatus
+              }
+          }
+      )
+      const result = await  adminCollection.find({}).toArray();
+      res.send(result)
+    })
+
+    //báo lỗi nếu dung lượng lớn hơn 10mb
+    // const bodyParser=require("body-parser")
+    // app.use(bodyParser.json({ limit: '10mb' }));
+    // app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
+    // app.use(express.json({ limit: '10mb' }));
+    // app.use(express.urlencoded({ limit: '10mb' }));
+    // app.use(express.json());
