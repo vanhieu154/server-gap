@@ -176,17 +176,13 @@ app.get("/address/:id", cors(), async (req, res) => {
     // Lấy người dùng dựa trên userId
     const user = await userCollection.findOne({ _id: o_id });
 
-    if (user) {
-        const addressIds = user.Address; // Lấy mảng addressIds từ user
-        addressCollection = database.collection("Address");
+    const addressIds = user.Address; // Lấy mảng addressIds từ user
+    addressCollection = database.collection("Address");
 
         // Lấy toàn bộ địa chỉ dựa trên mảng addressIds
-        const addresses = await addressCollection.find({ _id: { $in: addressIds } }).toArray();
+    const addresses = await addressCollection.find({ _id: { $in: addressIds } }).toArray();
 
-        res.send(addresses);
-    } else {
-        res.status(404).send("User not found");
-    }
+    res.send(addresses);    
 }); 
 
 
@@ -339,3 +335,78 @@ app.post("/adminlogin", cors(), async (req, res) => {
         }
     }
 });
+
+app.get("/admin_order", async (req, res) => {
+    const result = await orderCollection.find({}).sort({ cDate: -1 }).toArray();
+    res.send(result);
+});
+app.get("/admin_order/:id",cors(),async (req,res)=>{
+    var o_id = new ObjectId(req.params["id"]);
+    const result = await orderCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+}
+)
+app.get("/admin_order_detail/:id", cors(), async (req, res) => {
+    var o_id = new ObjectId(req.params["id"]);
+  
+    const order = await orderCollection.findOne({ _id: o_id });
+    
+    if (order) {
+      let orderDetailIDs = order.orderItems.map((item) => new ObjectId(item.productID));
+  
+      // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
+      const orderDetailProduct = await productCollection.find({ _id: { $in: orderDetailIDs } }).toArray();
+  
+      res.send(orderDetailProduct );
+    } else {
+      res.status(404).send("Order not found");
+    }
+  });
+
+app.get("/admin_order_user/:id", cors(), async (req, res) => {
+    var o_id = new ObjectId(req.params["id"]);
+  
+    const order = await orderCollection.findOne({ _id: o_id });
+    
+    let orderUserID =new ObjectId( order.userId)
+  
+    // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
+    const orderUser = await userCollection.find({ _id: orderUserID }).toArray();
+  
+    res.send(orderUser );
+
+});
+app.get("/admin_order_address/:id", cors(), async (req, res) => {
+    var o_id = new ObjectId(req.params["id"]);
+  
+    const order = await orderCollection.findOne({ _id: o_id });
+    
+    let orderAdressID =new ObjectId( order.addressID)
+    // let orderAdressID = order.addressID
+  
+    // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
+    const orderAddress = await addressCollection.find({ _id: orderAdressID }).toArray();
+  
+    res.send(orderAddress );
+
+});
+
+app.put("/admin_order_update",cors(),async(req,res)=>{
+    // const userCollection=database.collection("User");
+
+    //update json product into database
+    await orderCollection.updateOne(
+        {_id:new ObjectId(req.body._id)},//condition for update
+        { $set: { //Field for updating
+            status: req.body.status,
+            ShipByDate: req.body.ShipByDate,
+            DueDate: req.body.DueDate,
+            }
+        }
+    )
+    const result = await orderCollection.find({}).sort({ cDate: -1 }).toArray();
+    res.send(result)
+})
+
+
+
