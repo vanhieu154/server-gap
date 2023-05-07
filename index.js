@@ -299,7 +299,7 @@ app.post("/order",cors(),async(req,res)=>{
 // BLog
 
 app.get("/blogs",cors(),async (req,res)=>{
-    const result = await blogCollection.find({}).toArray();
+    const result = await blogCollection.find({}).sort({ cDate: -1 }).toArray();
     res.send(result)
 }
 )
