@@ -31,7 +31,7 @@ addressCollection = database.collection("Address");
 orderCollection=database.collection("Order")
 blogCollection = database.collection("Blog");
 adminCollection = database.collection("Admin");
-
+evaluateCollection= database.collection("Evaluate");
 
 app.get("/products", async (req, res) => {
     const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
@@ -284,6 +284,12 @@ app.put("/changePass", cors(), async (req, res) => {
 });
 
 
+app.get("/order_user/:id", async (req, res) => {
+    var o_id = (req.params["id"]);
+    const result = await orderCollection.find({userId:o_id}).sort({ cDate: -1 }).toArray();
+    res.send(result);
+});
+
 app.post("/order",cors(),async(req,res)=>{
     //put json product into database
     await orderCollection.insertOne(req.body)
@@ -405,7 +411,7 @@ app.get("/admin_order_detail/:id", cors(), async (req, res) => {
     } else {
       res.status(404).send("Order not found");
     }
-  });
+});
 
 app.get("/admin_order_user/:id", cors(), async (req, res) => {
     var o_id = new ObjectId(req.params["id"]);
@@ -477,10 +483,17 @@ app.put("/admin_order_update",cors(),async(req,res)=>{
       res.send(result)
     })
 
-    //báo lỗi nếu dung lượng lớn hơn 10mb
-    // const bodyParser=require("body-parser")
-    // app.use(bodyParser.json({ limit: '10mb' }));
-    // app.use(bodyParser.urlencoded({ extended: true, limit: '10mb' }));
-    // app.use(express.json({ limit: '10mb' }));
-    // app.use(express.urlencoded({ limit: '10mb' }));
-    // app.use(express.json());
+app.post("/productEvaluate",cors(),async(req,res)=>{
+    //put json product into database
+    await evaluateCollection.insertOne(req.body)
+    //send message to client(send all database to client)
+    res.send(req.body)
+})
+
+app.get("/productEvaluate/:id",cors(),async (req,res)=>{
+    var o_id =req.params["id"];
+    const result = await evaluateCollection.find({productId:o_id}).toArray();
+    res.send(result)
+}
+)
+    
