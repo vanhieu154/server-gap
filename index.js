@@ -33,6 +33,8 @@ blogCollection = database.collection("Blog");
 adminCollection = database.collection("Admin");
 evaluateCollection= database.collection("Evaluate");
 
+
+
 app.get("/products", async (req, res) => {
     const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
     res.send(result);
@@ -349,7 +351,7 @@ app.delete("/blogs/:id",cors(),async(req,res)=>{
 })
 
 // lấy danh sách admin
-adminCollection = database.collection("Admin");
+
 app.get("/admins",cors(),async (req,res)=>{
   const result = await adminCollection.find({}).toArray();
   res.send(result)
@@ -365,26 +367,7 @@ app.get("/admins/:id",cors(),async (req,res)=>{
   )
 
 //đăng nhâp admin
-app.post("/adminlogin", cors(), async (req, res) => {
-    const adminname = req.body.adminname;
-    const password = req.body.password;
 
-    const crypto = require('crypto');
-    const adminCollection = database.collection("Admin");
-
-    const admin = await adminCollection.findOne({adminname: adminname});
-
-    if (admin == null) {
-        res.send({"adminname": adminname, "message": "not exist"});
-    } else {
-        const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
-        if (admin.password === hash) {
-            res.send(user);
-        } else {
-            res.send({"adminname": adminname, "password": password, "message": "wrong password"});
-        }
-    }
-});
 
 app.get("/admin_order", async (req, res) => {
     const result = await orderCollection.find({}).sort({ cDate: -1 }).toArray();
@@ -459,17 +442,64 @@ app.put("/admin_order_update",cors(),async(req,res)=>{
 })
 
 
-
-  app.post("/admins",cors(),async(req,res)=>{
-    //put json Admin into database
-    await adminCollection.insertOne(req.body)
-    //send message to client(send all database to client)
+//tạo admin
+app.post("/admins",cors(),async(req,res)=>{
+    var crypto = require('crypto');
+    salt=crypto.randomBytes(16).toString('hex');
+    admin=req.body
+    hash=crypto.pbkdf2Sync(admin.password, salt,1000,64, `sha512`).toString(`hex`);
+    admin.password=hash
+    admin.salt=salt
+    await adminCollection.insertOne(admin)
     res.send(req.body)
-    })
+})
+//login admin
+app.post("/loginAdmin", cors(), async (req, res) => {
+    const Account_Name = req.body.adminname;
+    const password = req.body.password;
+
+    const crypto = require('crypto');
+
+    const admin = await adminCollection.findOne({Account_Name: Account_Name});
+
+    if (admin == null) {
+        res.send({"Account_Name": Account_Name, "message": "not exist"});
+    } else {
+        const hash = crypto.pbkdf2Sync(password, admin.salt, 1000, 64, `sha512`).toString(`hex`);
+        if (admin.password === hash) {
+            res.send(admin);
+        } else {
+            res.send({"Account_Name": Account_Name, "password": password, "message": "wrong password"});
+        }
+    }
+    // res.send(Account_Name)
+});
+
+// app.post("/adminlogin", cors(), async (req, res) => {
+//     const adminname = req.body.adminname;
+//     const password = req.body.password;
+
+//     const crypto = require('crypto');
+//     const adminCollection = database.collection("Admin");
+
+//     const admin = await adminCollection.findOne({adminname: adminname});
+
+//     if (admin == null) {
+//         res.send({"adminname": adminname, "message": "not exist"});
+//     } else {
+//         const hash = crypto.pbkdf2Sync(password, user.salt, 1000, 64, `sha512`).toString(`hex`);
+//         if (admin.password === hash) {
+//             res.send(user);
+//         } else {
+//             res.send({"adminname": adminname, "password": password, "message": "wrong password"});
+//         }
+//     }
+// });
+
 
 
     //vô hiệu hóa Admin
-    app.put("/admins/:id",cors(),async(req,res)=>{
+app.put("/admins/:id",cors(),async(req,res)=>{
       adminCollection=database.collection("Admin");
       var o_id = new ObjectId(req.params["id"]);
       await adminCollection.updateOne(
