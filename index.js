@@ -23,7 +23,8 @@ client = new MongoClient("mongodb://127.0.0.1:27017");
 client.connect();
 database = client.db("GAP2002");
 productCollection = database.collection("Product");
-
+couponCollection = database.collection("Coupon");
+promotionCollection = database.collection("Promotion");
 // database = client.db("FashionData");
 // productCollection = database.collection("test");
 userCollection = database.collection("User");
@@ -35,6 +36,150 @@ evaluateCollection= database.collection("Evaluate");
 
 
 
+
+// --------------Promotion -----------------
+app.get("/promotions",cors(),async (req,res)=>{
+    const result = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+    res.send(result)
+    }
+    )
+        
+    app.get("/promotions/:id",cors(),async (req,res)=>{
+        var o_id = new ObjectId(req.params["id"]);
+        const result = await promotionCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    }
+    )
+    app.get("/promotions_product/:id",cors(),async (req,res)=>{
+        var o_id = (req.params["id"]);
+        const result = await productCollection.find({Discount:o_id}).toArray();
+        res.send(result[0])
+    }
+    )
+    app.post("/promotions",cors(),async(req,res)=>{
+        //put json product into database
+        await productCollection.updateMany({}, {$set:{Discount:""}})
+        const insertedPromotion= await promotionCollection.insertOne(req.body[0])
+        const insertedPromotionID= insertedPromotion.insertedId
+        // await productCollection.updateMany({
+        //     _id: { $in: new ObjectId(req.body[1]) },
+        //     Discount: { $not: { $eq: "" } }
+        //   }, { $set: { Discount: "" } });
+        const objectIds = req.body[1].map(id => new ObjectId(id));
+        await productCollection.updateMany({_id:{$in : objectIds}}, {$set:{Discount:insertedPromotionID}})
+        //send message to client(send all database to client)
+        res.send(req.body)
+    })
+    
+    
+    app.put("/promotions",cors(),async(req,res)=>{
+        //update json product into database
+        const promotion=req.body[0]
+        await promotionCollection.updateOne(
+            {_id:new ObjectId(promotion._id)},//condition for update
+            { $set: { //Field for updating
+               TenPromotion:promotion.TenPromotion,
+               LoaiPromotion:promotion.LoaiPromotion,
+               Mota:promotion.Mota,
+                Gia:promotion.Gia,
+                Soluong:promotion.Soluong,
+                cDate:promotion.cDate,
+                }
+            }
+        )
+        await productCollection.updateMany({}, {$set:{Discount:""}})
+        const objectIds = req.body[1].map(id => new ObjectId(id));
+        await productCollection.updateMany({_id:{$in : objectIds}}, {$set:{Discount:new ObjectId(promotion._id)}})
+
+        var o_id = new ObjectId(promotion._id);
+        const result = await promotionCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    })
+    
+    app.put("/promotions_product",cors(),async(req,res)=>{
+        //update json product into database
+        await promotionCollection.updateOne(
+            {_id:new ObjectId(req.body._id)},//condition for update
+            { $set: { //Field for updating
+               
+                Discount:req.body.Discount,
+                cDate:req.body.cDate,
+                }
+            }
+        )
+        var o_id = new ObjectId(req.body._id);
+        const result = await promotionCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    })
+
+    
+    app.delete("/promotions/:id",cors(),async(req,res)=>{
+        var o_id = new ObjectId(req.params["id"]);
+        const result = await promotionCollection.find({_id:o_id}).toArray();
+        await promotionCollection.deleteOne(
+            {_id:o_id}
+        )
+        res.send(result[0])
+    })
+    
+
+
+// --------------Coupon-----------------
+
+app.get("/coupons",cors(),async (req,res)=>{
+    const result = await couponCollection.find({}).sort({ cDate: -1 }).toArray();
+    res.send(result)
+    }
+    )
+        
+    app.get("/coupons/:id",cors(),async (req,res)=>{
+        var o_id = new ObjectId(req.params["id"]);
+        const result = await couponCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    }
+    )
+    app.post("/coupons",cors(),async(req,res)=>{
+        //put json product into database
+        await couponCollection.insertOne(req.body)
+        //send message to client(send all database to client)
+        res.send(req.body)
+    })
+    
+    
+    app.put("/coupons",cors(),async(req,res)=>{
+        //update json product into database
+        await couponCollection.updateOne(
+            {_id:new ObjectId(req.body._id)},//condition for update
+            { $set: { //Field for updating
+                MaCoupon:req.body.MaCoupon,
+               SanphamApdung:req.body.SanphamApdung,
+               Noidung:req.body.Noidung,
+              Giatrigiam:req.body.Giatrigiam,
+             Soluong:req.body.Soluong,
+               Ngaybatdau:req.body.Ngaybatdau,
+               Ngayketthuc:req.body.Ngayketthuc,
+                cDate:req.body.cDate,
+                }
+            }
+        )
+        var o_id = new ObjectId(req.body._id);
+        const result = await couponCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    })
+    
+    app.delete("/coupons/:id",cors(),async(req,res)=>{
+        var o_id = new ObjectId(req.params["id"]);
+        const result = await couponCollection.find({_id:o_id}).toArray();
+        await couponCollection.deleteOne(
+            {_id:o_id}
+        )
+        res.send(result[0])
+    })
+    
+
+
+
+// ----------product --------------
 app.get("/products", async (req, res) => {
     const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
     res.send(result);
@@ -52,6 +197,28 @@ app.get("/products/:id",cors(),async (req,res)=>{
 }
 )
 
+app.put("/products",cors(),async(req,res)=>{
+    //update json product into database
+    await productCollection.updateOne(
+        {_id:new ObjectId(req.body._id)},//condition for update
+        { $set: { //Field for updating
+           TenSP:req.body.TenSP,
+           Hinhanh:req.body.Hinhanh,
+           LoaiSP:req.body.LoaiSP,
+          Hang:req.body.Hang,
+          Price:req.body.Price,
+         Mota:req.body.Mota,
+         Soluong:req.body.Soluong,
+           Ngaybatdau:req.body.Ngaybatdau,
+           Ngayketthuc:req.body.Ngayketthuc,
+            cDate:req.body.cDate,
+            }
+        }
+    )
+    var o_id = new ObjectId(req.body._id);
+    const result = await couponCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+})
 app.post("/products",cors(),async(req,res)=>{
     //put json product into database
     await productCollection.insertOne(req.body)
