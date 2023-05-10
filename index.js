@@ -79,6 +79,7 @@ app.get("/promotions",cors(),async (req,res)=>{
             {_id:new ObjectId(promotion._id)},//condition for update
             { $set: { //Field for updating
                TenPromotion:promotion.TenPromotion,
+               Hinhanh:promotion.Hinhanh,
                LoaiPromotion:promotion.LoaiPromotion,
                Mota:promotion.Mota,
                 Gia:promotion.Gia,
@@ -151,7 +152,8 @@ app.get("/coupons",cors(),async (req,res)=>{
         await couponCollection.updateOne(
             {_id:new ObjectId(req.body._id)},//condition for update
             { $set: { //Field for updating
-                MaCoupon:req.body.MaCoupon,
+                TenCoupon:req.body.TenCoupon,
+                Hinhanh:req.body.Hinhanh,
                SanphamApdung:req.body.SanphamApdung,
                Noidung:req.body.Noidung,
               Giatrigiam:req.body.Giatrigiam,
