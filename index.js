@@ -43,7 +43,7 @@ app.get("/promotions",cors(),async (req,res)=>{
     res.send(result)
     }
     )
-        
+
     app.get("/ActivatePromotions",cors(),async (req,res)=>{
         const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
         const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
@@ -66,7 +66,7 @@ app.get("/promotions",cors(),async (req,res)=>{
               product.Discount = finalPromotion.Gia;
             }
             return product;
-          });          
+          });
         res.send(productsWithDiscount);
         // res.send(filteredPromotions)
     })
@@ -87,8 +87,8 @@ app.get("/promotions",cors(),async (req,res)=>{
         const insertedPromotion= await promotionCollection.insertOne(req.body)
         res.send(insertedPromotion)
     })
-    
-    
+
+
     app.put("/promotions",cors(),async(req,res)=>{
         //update json product into database
         const promotion=req.body[0]
@@ -111,8 +111,23 @@ app.get("/promotions",cors(),async (req,res)=>{
         res.send(result[0])
     })
 
+    app.put("/promotions_product",cors(),async(req,res)=>{
+        //update json product into database
+        await promotionCollection.updateOne(
+            {_id:new ObjectId(req.body._id)},//condition for update
+            { $set: { //Field for updating
 
-    
+                Discount:req.body.Discount,
+                cDate:req.body.cDate,
+                }
+            }
+        )
+        var o_id = new ObjectId(req.body._id);
+        const result = await promotionCollection.find({_id:o_id}).toArray();
+        res.send(result[0])
+    })
+
+
     app.delete("/promotions/:id",cors(),async(req,res)=>{
         var o_id = new ObjectId(req.params["id"]);
         const result = await promotionCollection.find({_id:o_id}).toArray();
@@ -121,7 +136,7 @@ app.get("/promotions",cors(),async (req,res)=>{
         )
         res.send(result[0])
     })
-    
+
 
 
 
@@ -132,7 +147,7 @@ app.get("/coupons",cors(),async (req,res)=>{
     res.send(result)
     }
     )
-        
+
     app.get("/coupons/:id",cors(),async (req,res)=>{
         var o_id = new ObjectId(req.params["id"]);
         const result = await couponCollection.find({_id:o_id}).toArray();
@@ -145,8 +160,8 @@ app.get("/coupons",cors(),async (req,res)=>{
         //send message to client(send all database to client)
         res.send(req.body)
     })
-    
-    
+
+
     app.put("/coupons",cors(),async(req,res)=>{
         //update json product into database
         await couponCollection.updateOne(
@@ -167,7 +182,7 @@ app.get("/coupons",cors(),async (req,res)=>{
         const result = await couponCollection.find({_id:o_id}).toArray();
         res.send(result[0])
     })
-    
+
     app.delete("/coupons/:id",cors(),async(req,res)=>{
         var o_id = new ObjectId(req.params["id"]);
         const result = await couponCollection.find({_id:o_id}).toArray();
@@ -176,7 +191,7 @@ app.get("/coupons",cors(),async (req,res)=>{
         )
         res.send(result[0])
     })
-    
+
 
 
 
@@ -422,8 +437,8 @@ app.get("/address/:id", cors(), async (req, res) => {
         // Lấy toàn bộ địa chỉ dựa trên mảng addressIds
     const addresses = await addressCollection.find({ _id: { $in: addressIds } }).toArray();
 
-    res.send(addresses);    
-}); 
+    res.send(addresses);
+});
 
 
 app.delete("/address/:id/:addressId", cors(), async (req, res) => {
@@ -590,15 +605,15 @@ app.get("/admin_order/:id",cors(),async (req,res)=>{
 )
 app.get("/admin_order_detail/:id", cors(), async (req, res) => {
     var o_id = new ObjectId(req.params["id"]);
-  
+
     const order = await orderCollection.findOne({ _id: o_id });
-    
+
     if (order) {
       let orderDetailIDs = order.orderItems.map((item) => new ObjectId(item.productID));
-  
+
       // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
       const orderDetailProduct = await productCollection.find({ _id: { $in: orderDetailIDs } }).toArray();
-  
+
       res.send(orderDetailProduct );
     } else {
       res.status(404).send("Order not found");
@@ -607,28 +622,28 @@ app.get("/admin_order_detail/:id", cors(), async (req, res) => {
 
 app.get("/admin_order_user/:id", cors(), async (req, res) => {
     var o_id = new ObjectId(req.params["id"]);
-  
+
     const order = await orderCollection.findOne({ _id: o_id });
-    
+
     let orderUserID =new ObjectId( order.userId)
-  
+
     // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
     const orderUser = await userCollection.find({ _id: orderUserID }).toArray();
-  
+
     res.send(orderUser );
 
 });
 app.get("/admin_order_address/:id", cors(), async (req, res) => {
     var o_id = new ObjectId(req.params["id"]);
-  
+
     const order = await orderCollection.findOne({ _id: o_id });
-    
+
     let orderAdressID =new ObjectId( order.addressID)
     // let orderAdressID = order.addressID
-  
+
     // Lấy toàn bộ sản phẩm dựa trên mảng orderDetailIDs
     const orderAddress = await addressCollection.find({ _id: orderAdressID }).toArray();
-  
+
     res.send(orderAddress );
 
 });
@@ -722,6 +737,33 @@ app.put("/admins/:id",cors(),async(req,res)=>{
       res.send(result)
     })
 
+    app.put('/admin-update/:id', cors(), (req, res) => {
+      const id = new ObjectId(req.params["id"]);
+      const filter = { _id: id }
+
+      adminCollection.updateOne(filter,
+        {
+          $set: {
+          adminname: req.body.adminname,
+          password: req.body.password,
+          Phone: req.body.Phone,
+          Gender: req.body.Gender,
+          Image: req.body.Image,
+          AccountName: req.body.AccountName,
+          IsActive: req.body.IsActive,
+          CreatedDate: req.body.CreatedDate,
+          ModifiedDate: req.body.ModifiedDate,
+          Permission: req.body.Permission,
+          DOB: req.body.DOB,
+          AdminStatus: req.body.AdminStatus,
+          Email: req.body.Email,
+          }
+        }, function (err) {
+          if (err) throw err
+        })
+        res.send('update successful')
+      })
+
 app.post("/productEvaluate",cors(),async(req,res)=>{
     //put json product into database
     await evaluateCollection.insertOne(req.body)
@@ -735,4 +777,5 @@ app.get("/productEvaluate/:id",cors(),async (req,res)=>{
     res.send(result)
 }
 )
-    
+
+
