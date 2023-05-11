@@ -44,7 +44,7 @@ app.get("/promotions",cors(),async (req,res)=>{
     }
     )
 
-    app.get("/ActivatePromotions", cors(), async (req, res) => {
+    app.get("/ActivatePromotionsProduct", cors(), async (req, res) => {
         const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
         const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
         const today = new Date();
@@ -68,16 +68,74 @@ app.get("/promotions",cors(),async (req,res)=>{
           finalPromotion = sortedPromotions[0];
         }
       
-        const productsWithDiscount = products.map((product) => {
-          if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-            product.Discount = finalPromotion.Gia;
-          }
-          return product;
-        });
+        // const productsWithDiscount = products.map((product) => {
+        //   if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+        //     product.Discount = finalPromotion.Gia;
+        //   }
+        //   return product;
+        // });
+        const productsWithDiscount = products.filter((product) => {
+            if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+              product.Discount = finalPromotion.Gia;
+              return true; // Giữ lại sản phẩm trong mảng
+            }
+            return false; // Loại bỏ sản phẩm khỏi mảng
+          });
       
+        // res.send(finalPromotion)
         res.send(productsWithDiscount);
       });
+    // app.get("/ActivatePromotionsProduct", cors(), async (req, res) => {
+    //     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+    //     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+    //     const today = new Date();
       
+    //     const productsWithDiscount = products.filter((product) => {
+    //       const productPromotion = promotions.find(
+    //         (promotion) =>
+    //           promotion.SanphamApdung &&
+    //           promotion.SanphamApdung.includes(product._id.toString()) &&
+    //           new Date(promotion.Ngaybatdau) <= today &&
+    //           new Date(promotion.Ngayketthuc) > today
+    //       );
+      
+    //       if (productPromotion) {
+    //         product.Discount = productPromotion.Gia;
+    //         return true;
+    //       }
+    //       return false;
+    //     });
+      
+    //     res.send(productsWithDiscount);
+    //   });
+    
+      app.get("/ActivatePromotions", cors(), async (req, res) => {
+        // const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+        const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+        const today = new Date();
+        let finalPromotion;
+    
+        const filteredPromotions = promotions.filter(
+          (promotion) =>
+            new Date(promotion.Ngaybatdau) <= today &&
+            new Date(promotion.Ngayketthuc) > today
+        );
+      
+        if (filteredPromotions.length > 0) {
+          finalPromotion = filteredPromotions[0];
+        } else {
+          const futurePromotions = promotions.filter(
+            (promotion) => new Date(promotion.Ngaybatdau) > today
+          );
+          const sortedPromotions = futurePromotions.sort(
+            (a, b) => new Date(a.Ngaybatdau).getTime() - new Date(b.Ngaybatdau).getTime()
+          );
+          finalPromotion = sortedPromotions[0];
+        }
+      
+      
+        res.send(finalPromotion)
+      });
 
     app.get("/promotions/:id",cors(),async (req,res)=>{
         var o_id = new ObjectId(req.params["id"]);
@@ -199,9 +257,22 @@ app.get("/coupons",cors(),async (req,res)=>{
         )
         res.send(result[0])
     })
+    app.get("/user_coupon/:id", cors(), async (req, res) => {
+        const userId = new ObjectId(req.params["id"]);
+      
+        userCollection = database.collection("User");
+      
+        // Lấy người dùng dựa trên userId
+        const user = await userCollection.findOne({ _id: userId });
+      
+        const couponIds = user.discount.map(discount => new ObjectId(discount.DiscountID));
+        // Lấy toàn bộ coupon có IsActive=true dựa trên mảng couponIds
+        const coupons = await couponCollection.find({ _id: { $in: couponIds } }).toArray();
+      
+        res.send(coupons);
+      });
 
-
-
+    
 
 // ----------product --------------
 // app.get("/products", async (req, res) => {
@@ -330,6 +401,7 @@ app.put("/users",cors(),async(req,res)=>{
             dob:req.body.dob,
             phoneNumber:req.body.phoneNumber,
             gender:req.body.gender,
+            discount:req.body.discount,
             }
         }
     )
