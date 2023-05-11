@@ -44,32 +44,40 @@ app.get("/promotions",cors(),async (req,res)=>{
     }
     )
 
-    app.get("/ActivatePromotions",cors(),async (req,res)=>{
+    app.get("/ActivatePromotions", cors(), async (req, res) => {
         const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
         const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
         const today = new Date();
-        const filteredPromotions =  promotions
-        .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) > today)
-
-        let finalPromotion
+        let finalPromotion;
+      
+        const filteredPromotions = promotions.filter(
+          (promotion) =>
+            new Date(promotion.Ngaybatdau) <= today &&
+            new Date(promotion.Ngayketthuc) > today
+        );
+      
         if (filteredPromotions.length > 0) {
-            finalPromotion = filteredPromotions;
+          finalPromotion = filteredPromotions[0];
         } else {
-            const filteredPromotions = promotions.filter((promotion) => new Date(promotion.Ngaybatdau) > today);
-            const sortedPromotions = filteredPromotions.sort((a, b) => new Date(a.Ngaybatdau).getTime() - new Date(b.Ngaybatdau).getTime());
-            finalPromotion = sortedPromotions[0];
+          const futurePromotions = promotions.filter(
+            (promotion) => new Date(promotion.Ngaybatdau) > today
+          );
+          const sortedPromotions = futurePromotions.sort(
+            (a, b) => new Date(a.Ngaybatdau).getTime() - new Date(b.Ngaybatdau).getTime()
+          );
+          finalPromotion = sortedPromotions[0];
         }
-
-
+      
         const productsWithDiscount = products.map((product) => {
-            if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-              product.Discount = finalPromotion.Gia;
-            }
-            return product;
-          });
+          if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+            product.Discount = finalPromotion.Gia;
+          }
+          return product;
+        });
+      
         res.send(productsWithDiscount);
-        // res.send(filteredPromotions)
-    })
+      });
+      
 
     app.get("/promotions/:id",cors(),async (req,res)=>{
         var o_id = new ObjectId(req.params["id"]);
@@ -196,64 +204,61 @@ app.get("/coupons",cors(),async (req,res)=>{
 
 
 // ----------product --------------
+// app.get("/products", async (req, res) => {
+//     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+//     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+//     const today = new Date();
+//     const filteredPromotions =  promotions
+//     .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today)
+//     const productsWithDiscount=products
+//     let finalPromotion =filteredPromotions
+//     if (filteredPromotions.length > 0) {
+//         finalPromotion =filteredPromotions
+//         productsWithDiscount = products.map((product) => {
+//             if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+//               product.Discount = finalPromotion.Gia;
+//             }
+//             return product;
+//           }); 
+//     } 
+
+//     res.send(productsWithDiscount);
+//     // res.send(filteredPromotions)
+//   });
 app.get("/products", async (req, res) => {
     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
     const today = new Date();
-    const filteredPromotions =  promotions
-    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today)
-    const productsWithDiscount=products
-    let finalPromotion =filteredPromotions
-    if (filteredPromotions.length > 0) {
-        finalPromotion =filteredPromotions
-        productsWithDiscount = products.map((product) => {
-            if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-              product.Discount = finalPromotion.Gia;
-            }
-            return product;
-          }); 
-    } 
-
+    const filteredPromotions = promotions.filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today);
+    let finalPromotion = filteredPromotions.length > 0 ? filteredPromotions[0] : null;
+    const productsWithDiscount = products.map((product) => {
+      if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+        product.Discount = finalPromotion.Gia;
+      }
+      return product;
+    });
+  
     res.send(productsWithDiscount);
-    // res.send(filteredPromotions)
   });
-
 
 app.get("/products/:id",cors(),async (req,res)=>{
     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
     const today = new Date();
-    const filteredPromotions =  promotions
-    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) > today)
-
-    let finalPromotion =filteredPromotions
-    const productsWithDiscount= products
-    if (filteredPromotions.length > 0) {
-        productsWithDiscount = products.map((product) => {
-        if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-          product.Discount = finalPromotion.Gia;
-        }
-        return product;
-      });          
-    } 
+    const filteredPromotions = promotions.filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today);
+    let finalPromotion = filteredPromotions.length > 0 ? filteredPromotions[0] : null;
+    const productsWithDiscount = products.map((product) => {
+      if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+        product.Discount = finalPromotion.Gia;
+      }
+      return product;
+    });
     var o_id = new ObjectId(req.params["id"]);
     const result = productsWithDiscount.filter((product) => product._id.toString() === o_id.toString());
     res.send(result[0]);
 }
 )
-app.put("/productsClicked",cors(),async(req,res)=>{
-    //update json product into database
-    await productCollection.updateOne(
-        {_id:new ObjectId(req.body._id)},//condition for update
-        { $set: { //Field for updating
-           ClickCounter:req.body.ClickCounter,
-            }
-        }
-    )
-    var o_id = new ObjectId(req.body._id);
-    const result = await couponCollection.find({_id:o_id}).toArray();
-    res.send(result[0])
-})
+
 app.put("/products",cors(),async(req,res)=>{
     //update json product into database
     await productCollection.updateOne(
@@ -264,7 +269,8 @@ app.put("/products",cors(),async(req,res)=>{
            LoaiSP:req.body.LoaiSP,
           Hang:req.body.Hang,
           Price:req.body.Price,
-         Mota:req.body.Mota,
+          ClickCounter:req.body.ClickCounter,
+         Mota:req.body.Mota ,
          Soluong:req.body.Soluong,
            Ngaybatdau:req.body.Ngaybatdau,
            Ngayketthuc:req.body.Ngayketthuc,
