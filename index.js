@@ -244,7 +244,23 @@ app.get("/coupons",cors(),async (req,res)=>{
         res.send(coupons);
       });
 
-    
+      app.get("/userActive_coupon/:id", cors(), async (req, res) => {
+        const userId = new ObjectId(req.params["id"]);
+      
+        userCollection = database.collection("User");
+      
+        // Lấy người dùng dựa trên userId
+        const user = await userCollection.findOne({ _id: userId });
+      
+        const activeCouponIds = user.discount
+          .filter((discount) => discount.IsActive) // Lọc những discount có IsActive là true
+          .map((discount) => new ObjectId(discount.DiscountID)); // Chuyển đổi các DiscountID thành ObjectId
+      
+        // Lấy toàn bộ coupon có _id nằm trong activeCouponIds
+        const coupons = await couponCollection.find({ _id: { $in: activeCouponIds } }).toArray();
+      
+        res.send(coupons);
+      });
 
 // ----------product --------------
 // app.get("/products", async (req, res) => {
