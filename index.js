@@ -99,17 +99,19 @@ app.get("/promotions",cors(),async (req,res)=>{
 
     app.put("/promotions",cors(),async(req,res)=>{
         //update json product into database
-        const promotion=req.body[0]
+        const promotion=req.body
         await promotionCollection.updateOne(
             {_id:new ObjectId(promotion._id)},//condition for update
             { $set: { //Field for updating
                TenPromotion:promotion.TenPromotion,
                Hinhanh:promotion.Hinhanh,
-               SanphamApdung:req.body[1],
+               SanphamApdung:promotion.SanphamApdung,
                LoaiPromotion:promotion.LoaiPromotion,
                Mota:promotion.Mota,
+                Ngaybatdau:promotion.Ngaybatdau,
+                Ngayketthuc:promotion.Ngayketthuc,
                 Gia:promotion.Gia,
-                Soluong:promotion.Soluong,
+                // Soluong:promotion.Soluong,
                 cDate:promotion.cDate,
                 }
             }
@@ -180,6 +182,7 @@ app.get("/coupons",cors(),async (req,res)=>{
                Noidung:req.body.Noidung,
               Giatrigiam:req.body.Giatrigiam,
              Soluong:req.body.Soluong,
+            Dieukiengiam:req.body.Dieukiengiam,
                Ngaybatdau:req.body.Ngaybatdau,
                Ngayketthuc:req.body.Ngayketthuc,
                 cDate:req.body.cDate,
