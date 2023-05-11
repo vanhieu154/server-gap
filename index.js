@@ -53,12 +53,11 @@ app.get("/promotions",cors(),async (req,res)=>{
 
         let finalPromotion
         if (filteredPromotions.length > 0) {
-            finalPromotion = filteredPromotions[0];
+            finalPromotion = filteredPromotions;
         } else {
-            const sortedPromotions = promotions.sort(
-                (a, b) => new Date(a.Ngaybatdau).getTime() - new Date(b.Ngaybatdau).getTime()
-            );
-            finalPromotion = sortedPromotions.find((promotion) => new Date(promotion.Ngaybatdau) <= today);
+            const filteredPromotions = promotions.filter((promotion) => new Date(promotion.Ngaybatdau) > today);
+            const sortedPromotions = filteredPromotions.sort((a, b) => new Date(a.Ngaybatdau).getTime() - new Date(b.Ngaybatdau).getTime());
+            finalPromotion = sortedPromotions[0];
         }
 
 
@@ -69,7 +68,7 @@ app.get("/promotions",cors(),async (req,res)=>{
             return product;
           });          
         res.send(productsWithDiscount);
-        // res.send(finalPromotion)
+        // res.send(filteredPromotions)
     })
 
     app.get("/promotions/:id",cors(),async (req,res)=>{
@@ -85,22 +84,7 @@ app.get("/promotions",cors(),async (req,res)=>{
     }
     )
     app.post("/promotions",cors(),async(req,res)=>{
-        //put json product into database
-        // await productCollection.updateMany({}, {$set:{Discount:""}})
-        // const insertedPromotion= await promotionCollection.insertOne(req.body[0])
         const insertedPromotion= await promotionCollection.insertOne(req.body)
-        // const insertedPromotionID= insertedPromotion.insertedId
-
-
-        // await productCollection.updateMany({
-        //     _id: { $in: new ObjectId(req.body[1]) },
-        //     Discount: { $not: { $eq: "" } }
-        //   }, { $set: { Discount: "" } });
-
-
-        // const objectIds = req.body[1].map(id => new ObjectId(id));
-        // await productCollection.updateMany({_id:{$in : objectIds}}, {$set:{Discount:insertedPromotionID}})
-        //send message to client(send all database to client)
         res.send(insertedPromotion)
     })
     
@@ -113,6 +97,7 @@ app.get("/promotions",cors(),async (req,res)=>{
             { $set: { //Field for updating
                TenPromotion:promotion.TenPromotion,
                Hinhanh:promotion.Hinhanh,
+               SanphamApdung:req.body[1],
                LoaiPromotion:promotion.LoaiPromotion,
                Mota:promotion.Mota,
                 Gia:promotion.Gia,
@@ -121,10 +106,6 @@ app.get("/promotions",cors(),async (req,res)=>{
                 }
             }
         )
-        await productCollection.updateMany({}, {$set:{Discount:""}})
-        const objectIds = req.body[1].map(id => new ObjectId(id));
-        await productCollection.updateMany({_id:{$in : objectIds}}, {$set:{Discount:new ObjectId(promotion._id)}})
-
         var o_id = new ObjectId(promotion._id);
         const result = await promotionCollection.find({_id:o_id}).toArray();
         res.send(result[0])
@@ -173,7 +154,6 @@ app.get("/coupons",cors(),async (req,res)=>{
             { $set: { //Field for updating
                 TenCoupon:req.body.TenCoupon,
                 Hinhanh:req.body.Hinhanh,
-               SanphamApdung:req.body.SanphamApdung,
                Noidung:req.body.Noidung,
               Giatrigiam:req.body.Giatrigiam,
              Soluong:req.body.Soluong,
@@ -202,18 +182,63 @@ app.get("/coupons",cors(),async (req,res)=>{
 
 // ----------product --------------
 app.get("/products", async (req, res) => {
-    const result = await productCollection.find({}).sort({ cDate: -1 }).toArray();
-    res.send(result);
+    const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+    const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+    const today = new Date();
+    const filteredPromotions =  promotions
+    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) > today)
+
+    let finalPromotion =filteredPromotions
+    if (filteredPromotions.length > 0) {
+        const productsWithDiscount = products.map((product) => {
+        if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+          product.Discount = finalPromotion.Gia;
+        }
+        return product;
+      });          
+    } else {
+        const productsWithDiscount= products
+    }      
+    res.send(productsWithDiscount);
+    // res.send(filteredPromotions)
   });
 
 
 app.get("/products/:id",cors(),async (req,res)=>{
+    const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+    const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+    const today = new Date();
+    const filteredPromotions =  promotions
+    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) > today)
+
+    let finalPromotion =filteredPromotions
+    const productsWithDiscount= products
+    if (filteredPromotions.length > 0) {
+        productsWithDiscount = products.map((product) => {
+        if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+          product.Discount = finalPromotion.Gia;
+        }
+        return product;
+      });          
+    } 
     var o_id = new ObjectId(req.params["id"]);
-    const result = await productCollection.find({_id:o_id}).toArray();
-    res.send(result[0])
+    const result = productsWithDiscount.filter((product) => product._id.toString() === o_id.toString());
+    res.send(result[0]);
 }
 )
-
+app.put("/productsClicked",cors(),async(req,res)=>{
+    //update json product into database
+    await productCollection.updateOne(
+        {_id:new ObjectId(req.body._id)},//condition for update
+        { $set: { //Field for updating
+           ClickCounter:req.body.ClickCounter,
+            }
+        }
+    )
+    var o_id = new ObjectId(req.body._id);
+    const result = await couponCollection.find({_id:o_id}).toArray();
+    res.send(result[0])
+})
 app.put("/products",cors(),async(req,res)=>{
     //update json product into database
     await productCollection.updateOne(
