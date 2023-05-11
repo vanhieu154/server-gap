@@ -67,13 +67,6 @@ app.get("/promotions",cors(),async (req,res)=>{
           );
           finalPromotion = sortedPromotions[0];
         }
-      
-        // const productsWithDiscount = products.map((product) => {
-        //   if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-        //     product.Discount = finalPromotion.Gia;
-        //   }
-        //   return product;
-        // });
         const productsWithDiscount = products.filter((product) => {
             if (finalPromotion && finalPromotion.SanphamApdung && finalPromotion.SanphamApdung.includes(product._id.toString())) {
               product.Discount = finalPromotion.Gia;
@@ -85,31 +78,7 @@ app.get("/promotions",cors(),async (req,res)=>{
         // res.send(finalPromotion)
         res.send(productsWithDiscount);
       });
-    // app.get("/ActivatePromotionsProduct", cors(), async (req, res) => {
-    //     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
-    //     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
-    //     const today = new Date();
-      
-    //     const productsWithDiscount = products.filter((product) => {
-    //       const productPromotion = promotions.find(
-    //         (promotion) =>
-    //           promotion.SanphamApdung &&
-    //           promotion.SanphamApdung.includes(product._id.toString()) &&
-    //           new Date(promotion.Ngaybatdau) <= today &&
-    //           new Date(promotion.Ngayketthuc) > today
-    //       );
-      
-    //       if (productPromotion) {
-    //         product.Discount = productPromotion.Gia;
-    //         return true;
-    //       }
-    //       return false;
-    //     });
-      
-    //     res.send(productsWithDiscount);
-    //   });
-    
-      app.get("/ActivatePromotions", cors(), async (req, res) => {
+      app.get("/ActivatePromotionsPage", cors(), async (req, res) => {
         // const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
         const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
         const today = new Date();
@@ -235,11 +204,11 @@ app.get("/coupons",cors(),async (req,res)=>{
             { $set: { //Field for updating
                 TenCoupon:req.body.TenCoupon,
                 Hinhanh:req.body.Hinhanh,
-               Noidung:req.body.Noidung,
-              Giatrigiam:req.body.Giatrigiam,
-             Soluong:req.body.Soluong,
-               Ngaybatdau:req.body.Ngaybatdau,
-               Ngayketthuc:req.body.Ngayketthuc,
+                Noidung:req.body.Noidung,
+                Giatrigiam:req.body.Giatrigiam,
+                Soluong:req.body.Soluong,
+                Ngaybatdau:req.body.Ngaybatdau,
+                Ngayketthuc:req.body.Ngayketthuc,
                 cDate:req.body.cDate,
                 }
             }
@@ -310,8 +279,19 @@ app.get("/products", async (req, res) => {
     });
   
     res.send(productsWithDiscount);
+    // res.send(finalPromotion );
   });
 
+  app.get("/ActivatePromotions", async (req, res) => {
+    const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
+    const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
+    const today = new Date();
+    const filteredPromotions = promotions.filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today);
+    let finalPromotion = filteredPromotions.length > 0 ? filteredPromotions[0] : null;
+  
+    res.send(finalPromotion);
+    // res.send(finalPromotion );
+  });
 app.get("/products/:id",cors(),async (req,res)=>{
     const products = await productCollection.find({}).sort({ cDate: -1 }).toArray();
     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
