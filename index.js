@@ -201,19 +201,19 @@ app.get("/products", async (req, res) => {
     const promotions = await promotionCollection.find({}).sort({ cDate: -1 }).toArray();
     const today = new Date();
     const filteredPromotions =  promotions
-    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) > today)
-
+    .filter((promotion) => new Date(promotion.Ngaybatdau) <= today && new Date(promotion.Ngayketthuc) >= today)
+    const productsWithDiscount=products
     let finalPromotion =filteredPromotions
     if (filteredPromotions.length > 0) {
-        const productsWithDiscount = products.map((product) => {
-        if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
-          product.Discount = finalPromotion.Gia;
-        }
-        return product;
-      });          
-    } else {
-        const productsWithDiscount= products
-    }      
+        finalPromotion =filteredPromotions
+        productsWithDiscount = products.map((product) => {
+            if (finalPromotion && finalPromotion.SanphamApdung.includes(product._id.toString())) {
+              product.Discount = finalPromotion.Gia;
+            }
+            return product;
+          }); 
+    } 
+
     res.send(productsWithDiscount);
     // res.send(filteredPromotions)
   });
